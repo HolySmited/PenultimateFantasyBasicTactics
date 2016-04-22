@@ -4,34 +4,31 @@ using System.Collections;
 //Controlls information regarding the map
 public class TileController : MonoBehaviour
 {
-	/*public static TileController Instance;
+	public static TileController tileCont;
 
-	void Awake()
-	{
-		if (Instance != null) {
-			Instance = this;
-		} else {
-			Destroy(this);
-		}
-	}*/
-
-
-    public const int GRID_DIMENSION = 11; //Map will always be a sqaure, so this is both the x and z dimensions of the level
+    public int GRID_DIMENSION = 11; //Map will always be a sqaure, so this is both the x and z dimensions of the level
 
     public GameObject[] levelMapOneDimension; //One dimensional array is used so that each grid piece can be dragged into an array in the Inspector
-    public static GameObject[,] levelMap; //The actual code uses this 2D array, which is initialized using the 1D array declared above (Unity does not support 2D arrays in the Inspector)
-    public static Vector3[,] gridCoordinates; //2D array parallel with levelMap that stores the positions units will be in when occupying a space
+    public GameObject[,] levelMap; //The actual code uses this 2D array, which is initialized using the 1D array declared above (Unity does not support 2D arrays in the Inspector)
+    public Vector3[,] gridCoordinates; //2D array parallel with levelMap that stores the positions units will be in when occupying a space
 
-    public static GameObject hoveredTile; //The tile currently being hovered over; used to move the tile selector
-    public static int hoveredXIndex; //The x index of the tile currently being hovered over in levelMap
-    public static int hoveredZIndex; //The y index of the tile currently being hovered over in levelMap
-    public static GameObject selectedTile; //The tile currently selected (used for movement and some skill targeting)
+    public GameObject hoveredTile; //The tile currently being hovered over; used to move the tile selector
+    public int hoveredXIndex; //The x index of the tile currently being hovered over in levelMap
+    public int hoveredZIndex; //The y index of the tile currently being hovered over in levelMap
+    public GameObject selectedTile; //The tile currently selected (used for movement and some skill targeting)
 
     public GameObject hoverIndicator; //Stores the prefab for the hover indicator (used for instantiation only)
-    public static GameObject tileSelector; //Stores the instance of the hoverIndicator in the game world
+    public GameObject tileSelector; //Stores the instance of the hoverIndicator in the game world
 
-    void Start()
+    void Awake()
     {
+		if (tileCont == null) {
+			tileCont = this;
+		} 
+		else {
+			Destroy(this);
+		}
+
         int counter = 0; //Counter used to iterate through levelMapOneDimension
 
         levelMap = new GameObject[GRID_DIMENSION, GRID_DIMENSION]; //Initialize the 2D array for the grid objects
@@ -42,6 +39,8 @@ public class TileController : MonoBehaviour
             for (int k = 0; k < GRID_DIMENSION; k++)
             {
                 levelMap[i, k] = levelMapOneDimension[counter];
+				levelMap[i, k].GetComponent<TileInformation>().xIndex = i;
+				levelMap[i, k].GetComponent<TileInformation>().zIndex = k;
                 counter++;
             }
         }

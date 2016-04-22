@@ -4,6 +4,16 @@ using System.Collections;
 //Behavior for a basic unit
 public class UnitBehavior : MonoBehaviour
 {
+	public int xPosition;
+	public int zPosition;
+
+	public bool blueTeam;
+	public int health = 2;
+	public int damage = 1;
+	public bool hasUsed = false;
+
+	public GameObject occupiedTile;
+
     //Ranges
     private GameObject moveRange;
     private GameObject attackRange;
@@ -17,6 +27,15 @@ public class UnitBehavior : MonoBehaviour
     {
         moveRange = gameObject.transform.GetChild(0).gameObject;
         attackRange = gameObject.transform.GetChild(1).gameObject;
+
+		if (gameObject.tag == "BlueTeam") {
+			blueTeam = true;
+		} 
+		else {
+			blueTeam = false;
+		}
+
+		occupiedTile = TileController.tileCont.levelMap [xPosition, zPosition];
     }
 
     //Toggles movement range tiles on the game world
@@ -78,4 +97,33 @@ public class UnitBehavior : MonoBehaviour
             return false;
         }
     }
+
+	public void TakeDamage (int damageAmount) {
+		health -= damageAmount;
+
+		Debug.Log ("New health: " + health);
+
+		if (health <= 0) {
+			Debug.Log ("Unit has died!");
+
+			occupiedTile.GetComponent<TileInformation>().isOccupied = false;
+
+			if (blueTeam) {
+				GameController.gameCont.blueTeam.Remove(gameObject);
+			}
+			else {
+				GameController.gameCont.redTeam.Remove(gameObject);
+			}
+
+			Destroy (gameObject);
+		}
+	}
+
+	public void UpdatePosition(int newX, int newZ, GameObject newTile) {
+		GameController.gameCont.activeCharacter.transform.position = newTile.GetComponent<TileInformation> ().unitLocation;
+		xPosition = newX;
+		zPosition = newZ;
+
+		occupiedTile = newTile;
+	}
 }
