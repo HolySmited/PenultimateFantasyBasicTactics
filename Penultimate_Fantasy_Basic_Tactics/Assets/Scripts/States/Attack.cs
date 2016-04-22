@@ -1,8 +1,14 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class UnitSelection : State
+//State for when attack has been selected from the action menu
+public class Attack : State
 {
+    public Attack()
+    {
+        OnStateEnter();
+    }
+
     public override void ExecuteCommand(KeyCode inputKey)
     {
         //Call the appropriate function based on the key pressed; if no supported key is pressed, return
@@ -23,22 +29,27 @@ public class UnitSelection : State
             case KeyCode.Space:
                 SelectUnit();
                 break;
+            case KeyCode.Backspace:
+                RevertState();
+                break;
             default:
                 return;
         }
     }
 
+    //Show the attack range of the active character
     public override void OnStateEnter()
     {
-        ;
+        GameController.activeCharacter.GetComponent<UnitBehavior>().ToggleAttackRange();        
     }
 
+    //Hide the attack range of the active character
     public override void OnStateExit()
     {
-        StateController.stateList.Push(new Movement());
-        StateController.currentState = (State) StateController.stateList.Peek();
+        GameController.activeCharacter.GetComponent<UnitBehavior>().ToggleAttackRange();
     }
 
+    //Move the selector
     private void MoveUnitSelector(int xDelta, int zDelta)
     {
         //If the tile the user is trying to move to exists (is not out of the array bounds)
@@ -56,17 +67,39 @@ public class UnitSelection : State
         }
     }
 
+    //Select the unit the selector is hovering over
     private void SelectUnit()
     {
-        //If the hoveredTile has a character on it (all tiles have 5 children, the outer black lines and the colored center)
+        //If the hoveredTile has a character on it
         if (TileController.hoveredTile.GetComponent<TileInformation>().isOccupied)
         {
-            //Set the active character (there will always be one character per tile, and it will always be the sixth child, which is index 5)
-            GameController.SetActiveCharacter(TileController.hoveredTile.GetComponent<TileInformation>().occupyingUnit);
+            //If the character is in range
+            if (GameController.activeCharacter.GetComponent<UnitBehavior>().CheckRangeForEnemy(TileController.hoveredTile.GetComponent<TileInformation>().occupyingUnit))
+            {
+                Debug.Log("Attack complete"); //Attack it
 
-            OnStateExit();
+                //Start a new turn
+                StateController.stateList.Clear();
+                StateController.stateList.Push(new UnitSelection());
+                StateController.currentState = (State)StateController.stateList.Peek();
+
+                OnStateExit();
+
+                GameController.activeCharacter = null;
+            }
         }
 
         return;
+    }
+
+    //Revert to the previous state
+    private void RevertState()
+    {
+        OnStateExit();
+
+        StateController.stateList.Pop();
+        StateController.currentState = (State)StateController.stateList.Peek();
+
+        StateController.currentState.OnStateEnter();
     }
 }

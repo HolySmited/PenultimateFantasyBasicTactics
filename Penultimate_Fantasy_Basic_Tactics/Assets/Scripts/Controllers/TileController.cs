@@ -1,21 +1,21 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-/*
-* ANALYSIS
-* Class in charge of initializing the level and managing the current game state.
-*
-* IMPLEMENTATION
-*   Start() initializes all necessary values.
-*
-*   Update() checks for input from the user and calls the ExecuteCommand function of the current state, passing
-*   in the key that was pressed that frame.
-*
-*   SetActiveCharacter() takes a GameObject as an argument and sets it as the activeCharacter
-*/
-
-public class GameController : MonoBehaviour
+//Controlls information regarding the map
+public class TileController : MonoBehaviour
 {
+	/*public static TileController Instance;
+
+	void Awake()
+	{
+		if (Instance != null) {
+			Instance = this;
+		} else {
+			Destroy(this);
+		}
+	}*/
+
+
     public const int GRID_DIMENSION = 11; //Map will always be a sqaure, so this is both the x and z dimensions of the level
 
     public GameObject[] levelMapOneDimension; //One dimensional array is used so that each grid piece can be dragged into an array in the Inspector
@@ -29,13 +29,8 @@ public class GameController : MonoBehaviour
 
     public GameObject hoverIndicator; //Stores the prefab for the hover indicator (used for instantiation only)
     public static GameObject tileSelector; //Stores the instance of the hoverIndicator in the game world
-    public GameObject class1; //Prefab for of a character for movement testing (used for instantiation only)
 
-    public static State currentState; //Stores the current state of the game
-    public static GameObject activeCharacter; //Stores the active character (currently selected character)
-    private GameObject testCharacter; //Stores the instance of the class1 character in the game world (used for movement testing)
-
-	void Start ()
+    void Start()
     {
         int counter = 0; //Counter used to iterate through levelMapOneDimension
 
@@ -61,10 +56,6 @@ public class GameController : MonoBehaviour
 
         selectedTile = null; //No tile starts out selected
 
-        currentState = new UnitSelection(); //The first state is always selecting a unit
-
-        activeCharacter = null; //No unit starts out selected
-
         //Populate the gridCoordinates array with possible unit locations
         for (int i = 0; i < GRID_DIMENSION; i++)
         {
@@ -83,38 +74,5 @@ public class GameController : MonoBehaviour
 
         //Instantiate the tile selector based on the currently hovered tile
         tileSelector = Instantiate(hoverIndicator, new Vector3(hoveredTile.transform.position.x, (hoveredTile.transform.position.y * 2), hoveredTile.transform.position.z), Quaternion.identity) as GameObject;
-        testCharacter = Instantiate(class1, gridCoordinates[0, 0], Quaternion.identity) as GameObject; //Instantiate the test character
-        testCharacter.transform.SetParent(levelMap[0, 0].transform); //Child the test character
-	}
-	
-	void Update ()
-    {
-        //If a key was pressed this frame, call the ExecuteCommand() function of the current state, passing in the pressed key
-
-	    if (Input.GetKeyDown(KeyCode.LeftArrow))
-        {
-            currentState.ExecuteCommand(KeyCode.LeftArrow);
-        }
-        else if (Input.GetKeyDown(KeyCode.RightArrow))
-        {
-            currentState.ExecuteCommand(KeyCode.RightArrow);
-        }
-        else if (Input.GetKeyDown(KeyCode.DownArrow))
-        {
-            currentState.ExecuteCommand(KeyCode.DownArrow);
-        }
-        else if (Input.GetKeyDown(KeyCode.UpArrow))
-        {
-            currentState.ExecuteCommand(KeyCode.UpArrow);
-        }
-        else if (Input.GetKeyDown(KeyCode.Space))
-        {
-            currentState.ExecuteCommand(KeyCode.Space);
-        }
-    }
-
-    public static void SetActiveCharacter(GameObject character)
-    {
-        activeCharacter = character; //Sets the active character with the provided GameObject
     }
 }
