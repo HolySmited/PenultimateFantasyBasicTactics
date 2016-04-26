@@ -5,7 +5,7 @@ using System.Collections.Generic;
 //Controlls information regarding the game in general
 public class GameController : MonoBehaviour
 {
-	public static GameController gameCont;
+	public static GameController instance;
 
     public GameObject activeCharacter; //The current selected character
 	public UnitBehavior activeCharacterScript;
@@ -18,19 +18,21 @@ public class GameController : MonoBehaviour
 	public Material blueUsed;
 	public Material redUsed;
 
+    public LinkedList<GameObject> allUnits;
+
 	void Awake()
 	{
-		blueTeam = new LinkedList<GameObject> ();
-		redTeam = new LinkedList<GameObject> ();
-
-		if (gameCont == null) {
-			gameCont = this;
+		if (instance == null) {
+            instance = this;
 		} 
 		else {
 			Destroy(this);
 		}
 
-		GameObject[] blueTeamArr = GameObject.FindGameObjectsWithTag ("BlueTeam");
+        blueTeam = new LinkedList<GameObject>();
+        redTeam = new LinkedList<GameObject>();
+
+        GameObject[] blueTeamArr = GameObject.FindGameObjectsWithTag ("BlueTeam");
 		GameObject[] redTeamArr = GameObject.FindGameObjectsWithTag ("RedTeam");
 
 		foreach (GameObject obj in blueTeamArr) {
@@ -40,7 +42,24 @@ public class GameController : MonoBehaviour
 		foreach (GameObject obj in redTeamArr) {
 			redTeam.AddLast (obj);
 		}
-	}
+
+        allUnits = new LinkedList<GameObject>(blueTeam);
+
+        foreach (GameObject unit in redTeam)
+        {
+            allUnits.AddLast(unit);
+        }
+    }
+
+    void Start()
+    {
+        TileController.instance.Initialize();
+
+        foreach (GameObject tile in TileController.instance.levelMap)
+        {
+            tile.GetComponent<TileInformation>().Initialize();
+        }
+    }
 
     //Sets the active character with the provided GameObject
     public void SetActiveCharacter(GameObject character)
@@ -67,7 +86,7 @@ public class GameController : MonoBehaviour
 			}
 
 			isBlueTurn = false;
-			UIController.uiCont.SwapTurn(isBlueTurn);
+			UIController.instance.SwapTurn(isBlueTurn);
 
 			foreach (GameObject unit in blueTeam) {
 				unit.GetComponent<MeshRenderer>().material = blueTeamColor;
@@ -82,23 +101,21 @@ public class GameController : MonoBehaviour
 			}
 
 			isBlueTurn = true;
-			UIController.uiCont.SwapTurn(isBlueTurn);
+			UIController.instance.SwapTurn(isBlueTurn);
 
 			foreach (GameObject unit in redTeam) {
 				unit.GetComponent<MeshRenderer>().material = redTeamColor;
 				unit.GetComponent<UnitBehavior>().hasUsed = false;
 			}
 		}
-
-		CheckEndGame ();
 	}
 
-	private void CheckEndGame() {
+	public void CheckEndGame() {
 		if (redTeam.Count == 0) {
-			UIController.uiCont.EndGame(true);
+            UIController.instance.EndGame(true);
 		}
 		else if (blueTeam.Count == 0) {
-			UIController.uiCont.EndGame(false);
+            UIController.instance.EndGame(false);
 		}
 	}
 }

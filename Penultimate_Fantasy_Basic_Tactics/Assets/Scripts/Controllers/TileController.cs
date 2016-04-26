@@ -4,7 +4,7 @@ using System.Collections;
 //Controlls information regarding the map
 public class TileController : MonoBehaviour
 {
-	public static TileController tileCont;
+	public static TileController instance;
 
     public int GRID_DIMENSION = 11; //Map will always be a sqaure, so this is both the x and z dimensions of the level
 
@@ -22,13 +22,17 @@ public class TileController : MonoBehaviour
 
     void Awake()
     {
-		if (tileCont == null) {
-			tileCont = this;
-		} 
-		else {
-			Destroy(this);
-		}
+        if (instance == null)
+        {
+            instance = this;
+        }
+        else {
+            Destroy(this);
+        }
+    }
 
+    public void Initialize()
+    {
         int counter = 0; //Counter used to iterate through levelMapOneDimension
 
         levelMap = new GameObject[GRID_DIMENSION, GRID_DIMENSION]; //Initialize the 2D array for the grid objects

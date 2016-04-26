@@ -4,8 +4,17 @@ using System.Collections;
 //State for when attack has been selected from the action menu
 public class Attack : State
 {
-    public Attack()
+    GameController gameCont = GameController.instance;
+    TileController tileCont = TileController.instance;
+    StateController stateCont = StateController.instance;
+    UIController uiCont = UIController.instance;
+
+    private bool isSpell;
+
+    public Attack(bool isSpell)
     {
+        this.isSpell = isSpell;
+
         OnStateEnter();
     }
 
@@ -27,7 +36,10 @@ public class Attack : State
                 MoveUnitSelector(0, 1);
                 break;
             case KeyCode.Space:
-                SelectUnit();
+                if (!isSpell)
+                    SelectUnit();
+                else
+                    SelectTile();
                 break;
             case KeyCode.Backspace:
                 RevertState();
@@ -40,28 +52,44 @@ public class Attack : State
     //Show the attack range of the active character
     public override void OnStateEnter()
     {
-        GameController.gameCont.activeCharacterScript.ToggleAttackRange();        
+        if (isSpell)
+        {
+            gameCont.activeCharacterScript.ToggleMagicRange();
+        }
+        else
+        {
+            gameCont.activeCharacterScript.ToggleAttackRange();
+        }        
     }
 
     //Hide the attack range of the active character
     public override void OnStateExit()
     {
-        GameController.gameCont.activeCharacterScript.ToggleAttackRange();
+        if (isSpell)
+        {
+            gameCont.activeCharacterScript.ToggleMagicRange();
+        }
+        else
+        {
+            gameCont.activeCharacterScript.ToggleAttackRange();
+        }
     }
 
     //Move the selector
     private void MoveUnitSelector(int xDelta, int zDelta)
     {
         //If the tile the user is trying to move to exists (is not out of the array bounds)
-        if ((TileController.tileCont.hoveredXIndex + xDelta >= 0 && TileController.tileCont.hoveredXIndex + xDelta < TileController.tileCont.GRID_DIMENSION) && 
-		    (TileController.tileCont.hoveredZIndex + zDelta >= 0 && TileController.tileCont.hoveredZIndex + zDelta < TileController.tileCont.GRID_DIMENSION))
+        if ((tileCont.hoveredXIndex + xDelta >= 0 && tileCont.hoveredXIndex + xDelta < tileCont.GRID_DIMENSION) && 
+		    (tileCont.hoveredZIndex + zDelta >= 0 && tileCont.hoveredZIndex + zDelta < tileCont.GRID_DIMENSION))
         {
             //Change the hoveredTile information and move the tile selector
-            TileController.tileCont.hoveredXIndex += xDelta;
-            TileController.tileCont.hoveredZIndex += zDelta;
-            TileController.tileCont.hoveredTile = TileController.tileCont.levelMap[TileController.tileCont.hoveredXIndex, TileController.tileCont.hoveredZIndex];
-            TileController.tileCont.tileSelector.transform.position = TileController.tileCont.levelMap[TileController.tileCont.hoveredXIndex, TileController.tileCont.hoveredZIndex]
+            tileCont.hoveredXIndex += xDelta;
+            tileCont.hoveredZIndex += zDelta;
+            tileCont.hoveredTile = tileCont.levelMap[tileCont.hoveredXIndex, tileCont.hoveredZIndex];
+            tileCont.tileSelector.transform.position = tileCont.levelMap[tileCont.hoveredXIndex, tileCont.hoveredZIndex]
 			.GetComponent<TileInformation>().highlightLocation;
+
+            uiCont.SetNewHoveredUnit();
         }
         else
         {
@@ -73,26 +101,29 @@ public class Attack : State
     private void SelectUnit()
     {
         //If the hoveredTile has a character on it
-        if (TileController.tileCont.hoveredTile.GetComponent<TileInformation>().isOccupied)
+        if (tileCont.hoveredTile.GetComponent<TileInformation>().isOccupied)
         {
             //If the character is in range
-            if (GameController.gameCont.activeCharacterScript.CheckRangeForEnemy(TileController.tileCont.hoveredTile.GetComponent<TileInformation>().occupyingUnit))
+            if (gameCont.activeCharacterScript.CheckRangeForObject(tileCont.hoveredTile.GetComponent<TileInformation>().occupyingUnit, gameCont.activeCharacterScript.unitClass.GetAttackDistance()))
             {
-				if ((GameController.gameCont.isBlueTurn && !TileController.tileCont.hoveredTile.GetComponent<TileInformation>().occupyingUnit.GetComponent<UnitBehavior>().blueTeam) ||
-				    (!GameController.gameCont.isBlueTurn && TileController.tileCont.hoveredTile.GetComponent<TileInformation>().occupyingUnit.GetComponent<UnitBehavior>().blueTeam)) {
-					TileController.tileCont.hoveredTile.GetComponent<TileInformation>().occupyingUnit.GetComponent<UnitBehavior>()
-						.TakeDamage(GameController.gameCont.activeCharacterScript.damage); //Attack it
+				if ((gameCont.isBlueTurn && !tileCont.hoveredTile.GetComponent<TileInformation>().occupyingUnit.GetComponent<UnitBehavior>().blueTeam) ||
+				    (!gameCont.isBlueTurn && tileCont.hoveredTile.GetComponent<TileInformation>().occupyingUnit.GetComponent<UnitBehavior>().blueTeam)) {
+                    gameCont.activeCharacter.GetComponent<BaseClass>().Attack(tileCont.hoveredTile.GetComponent<TileInformation>().occupyingUnit); //Attack it
 
-	                //Start a new turn
-	                StateController.stateCont.stateList.Clear();
-	                StateController.stateCont.stateList.Push(new UnitSelection());
-	                StateController.stateCont.currentState = (State)StateController.stateCont.stateList.Peek();
+                    uiCont.SetNewHoveredUnit();
+
+                    gameCont.CheckEndGame();
+
+                    //Start a new turn
+                    stateCont.stateList.Clear();
+	                stateCont.stateList.Push(new UnitSelection());
+	                stateCont.currentState = (State)stateCont.stateList.Peek();
 
 	                OnStateExit();
 
-					GameController.gameCont.UpdateUnits ();
-	                GameController.gameCont.activeCharacter = null;
-					GameController.gameCont.activeCharacterScript = null;
+					gameCont.UpdateUnits ();
+	                gameCont.activeCharacter = null;
+					gameCont.activeCharacterScript = null;
 				}
             }
         }
@@ -100,14 +131,51 @@ public class Attack : State
         return;
     }
 
+    private void SelectTile()
+    {
+        //If the tile is in range
+        if (gameCont.activeCharacterScript.CheckRangeForObject(tileCont.hoveredTile, gameCont.activeCharacter.GetComponent<Mage>().magicDistance))
+        {
+            GameObject[] unitsInRange = new GameObject[5];
+            int counter = 0;
+
+            foreach (GameObject unit in gameCont.allUnits)
+            {
+                float distanceFromTile = (unit.transform.position - tileCont.hoveredTile.transform.position).magnitude;
+
+                if (distanceFromTile <= 2.05f)
+                {
+                    unitsInRange[counter] = unit;
+                    counter++;
+                }
+            }
+
+            gameCont.activeCharacter.GetComponent<Mage>().Attack(unitsInRange); //Attack it
+
+            uiCont.SetNewHoveredUnit();
+
+            gameCont.CheckEndGame();
+
+            stateCont.stateList.Clear();
+            stateCont.stateList.Push(new UnitSelection());
+            stateCont.currentState = (State)stateCont.stateList.Peek();
+
+            OnStateExit();
+
+            gameCont.UpdateUnits();
+            gameCont.activeCharacter = null;
+            gameCont.activeCharacterScript = null;
+        }
+    }
+
     //Revert to the previous state
     private void RevertState()
     {
         OnStateExit();
 
-        StateController.stateCont.stateList.Pop();
-        StateController.stateCont.currentState = (State)StateController.stateCont.stateList.Peek();
+        stateCont.stateList.Pop();
+        stateCont.currentState = (State)stateCont.stateList.Peek();
 
-        StateController.stateCont.currentState.OnStateEnter();
+        stateCont.currentState.OnStateEnter();
     }
 }

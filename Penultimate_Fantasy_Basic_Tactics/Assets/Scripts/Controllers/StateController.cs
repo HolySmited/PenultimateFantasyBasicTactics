@@ -4,15 +4,15 @@ using System.Collections;
 //Controlls information regarding the current state of the game
 public class StateController : MonoBehaviour
 {
-	public static StateController stateCont;
+    public static StateController instance;
 
     public State currentState; //Stores the current state of the game
     public Stack stateList; //Stores a list of states for the entire unit's turn
 
 	void Awake()
 	{
-		if (stateCont == null) {
-			stateCont = this;
+		if (instance == null) {
+            instance = this;
 		} 
 		else {
 			Destroy(this);

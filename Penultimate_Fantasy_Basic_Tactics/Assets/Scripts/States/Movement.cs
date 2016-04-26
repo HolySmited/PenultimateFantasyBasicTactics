@@ -3,6 +3,11 @@ using System.Collections;
 
 public class Movement : State
 {
+    GameController gameCont = GameController.instance;
+    TileController tileCont = TileController.instance;
+    StateController stateCont = StateController.instance;
+    UIController uiCont = UIController.instance;
+
     public Movement()
     {
         OnStateEnter();
@@ -39,27 +44,29 @@ public class Movement : State
     //Show the unit's movement range
     public override void OnStateEnter()
     {
-        GameController.gameCont.activeCharacterScript.ToggleMovementRange();
+        gameCont.activeCharacterScript.ToggleMovementRange();
     }
 
     //Hide the unit's movement range
     public override void OnStateExit()
     {
-        GameController.gameCont.activeCharacterScript.ToggleMovementRange();
+        gameCont.activeCharacterScript.ToggleMovementRange();
     }
 
     private void MoveTileSelector(int xDelta, int zDelta)
     {
         //If the tile the user is trying to move to exists (is not out of the array bounds)
-        if ((TileController.tileCont.hoveredXIndex + xDelta >= 0 && TileController.tileCont.hoveredXIndex + xDelta < TileController.tileCont.GRID_DIMENSION) && 
-		    (TileController.tileCont.hoveredZIndex + zDelta >= 0 && TileController.tileCont.hoveredZIndex + zDelta < TileController.tileCont.GRID_DIMENSION))
+        if ((tileCont.hoveredXIndex + xDelta >= 0 && tileCont.hoveredXIndex + xDelta < tileCont.GRID_DIMENSION) && 
+		    (tileCont.hoveredZIndex + zDelta >= 0 && tileCont.hoveredZIndex + zDelta < tileCont.GRID_DIMENSION))
         {
             //Change the hoveredTile information and move the tile selector
-            TileController.tileCont.hoveredXIndex += xDelta;
-            TileController.tileCont.hoveredZIndex += zDelta;
-            TileController.tileCont.hoveredTile = TileController.tileCont.levelMap[TileController.tileCont.hoveredXIndex, TileController.tileCont.hoveredZIndex];
-            TileController.tileCont.tileSelector.transform.position = TileController.tileCont.levelMap[TileController.tileCont.hoveredXIndex, TileController.tileCont.hoveredZIndex]
+            tileCont.hoveredXIndex += xDelta;
+            tileCont.hoveredZIndex += zDelta;
+            tileCont.hoveredTile = tileCont.levelMap[tileCont.hoveredXIndex, tileCont.hoveredZIndex];
+            tileCont.tileSelector.transform.position = tileCont.levelMap[tileCont.hoveredXIndex, tileCont.hoveredZIndex]
 			.GetComponent<TileInformation>().highlightLocation;
+
+            uiCont.SetNewHoveredUnit();
         }
         else
         {
@@ -70,24 +77,23 @@ public class Movement : State
     private void SelectTile()
     {
         //If the hoveredTile does not have a character on it
-        if (!TileController.tileCont.hoveredTile.GetComponent<TileInformation>().isOccupied || TileController.tileCont.hoveredTile.GetComponent<TileInformation>().occupyingUnit == GameController.gameCont.activeCharacter)
+        if (!tileCont.hoveredTile.GetComponent<TileInformation>().isOccupied || tileCont.hoveredTile.GetComponent<TileInformation>().occupyingUnit == gameCont.activeCharacter)
         {
             //If the tile is in range
-            if (GameController.gameCont.activeCharacterScript.CheckRangeForTile(TileController.tileCont.hoveredTile))
+            if (gameCont.activeCharacterScript.CheckRangeForObject(tileCont.hoveredTile, gameCont.activeCharacterScript.unitClass.GetMoveDistance()))
             {
                 OnStateExit();
 
                 //Move to the tile
-                Vector3 oldPosition = GameController.gameCont.activeCharacter.transform.position;
-                GameObject oldTile = TileController.tileCont.levelMap[GameController.gameCont.activeCharacterScript.xPosition, GameController.gameCont.activeCharacterScript.zPosition];
+                GameObject oldTile = tileCont.levelMap[gameCont.activeCharacterScript.xPosition, gameCont.activeCharacterScript.zPosition];
 
-				GameController.gameCont.activeCharacterScript.UpdatePosition(TileController.tileCont.hoveredXIndex, TileController.tileCont.hoveredZIndex, TileController.tileCont.hoveredTile);
+				gameCont.activeCharacterScript.UpdatePosition(tileCont.hoveredXIndex, tileCont.hoveredZIndex, tileCont.hoveredTile);
 
                 oldTile.GetComponent<TileInformation>().UpdateInformation(null);
-                TileController.tileCont.hoveredTile.GetComponent<TileInformation>().UpdateInformation(GameController.gameCont.activeCharacter);
+                tileCont.hoveredTile.GetComponent<TileInformation>().UpdateInformation(gameCont.activeCharacter);
 
-                StateController.stateCont.stateList.Push(new MenuSelection(oldPosition, oldTile, TileController.tileCont.hoveredTile));
-                StateController.stateCont.currentState = (State) StateController.stateCont.stateList.Peek();
+                stateCont.stateList.Push(new MenuSelection(oldTile, tileCont.hoveredTile));
+                stateCont.currentState = (State) stateCont.stateList.Peek();
             }
         }
 
@@ -99,10 +105,10 @@ public class Movement : State
     {
         OnStateExit();
 
-        GameController.gameCont.activeCharacter = null;
-		GameController.gameCont.activeCharacterScript = null;
+        gameCont.activeCharacter = null;
+		gameCont.activeCharacterScript = null;
 
-        StateController.stateCont.stateList.Pop();
-        StateController.stateCont.currentState = (State) StateController.stateCont.stateList.Peek();
+        stateCont.stateList.Pop();
+        stateCont.currentState = (State) stateCont.stateList.Peek();
     }
 }

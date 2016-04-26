@@ -5,22 +5,26 @@ using UnityEngine.UI;
 //Controlls information regarding the UI
 public class UIController : MonoBehaviour
 {
-	public static UIController uiCont;
+	public static UIController instance;
 	
     public GameObject attackMenu; //Menu for selecting attack
+    public GameObject magicMenu; //Menu for mages
     public GameObject selectionArrow; //Arrow to indicate selection
+
+    public Text unitStatus;
 
 	public Text turnIndicator;
 	public Text gameWin;
 	
-	public GameObject[] menuOptions;
+	public GameObject[] attackMenuOptions;
+    public GameObject[] magicMenuOptions;
 
-    private Vector3 originalArrowPos; //Original position of the arow
+    private BaseClass hoveredUnit = null;
 
 	void Awake()
 	{
-		if (uiCont == null) {
-			uiCont = this;
+		if (instance == null) {
+            instance = this;
 		} 
 		else {
 			Destroy (this);
@@ -31,24 +35,43 @@ public class UIController : MonoBehaviour
     {
         //Initialize
         attackMenu = GameObject.Find("BasicAttackMenu");
+        magicMenu = GameObject.Find("BasicMagicMenu");
         selectionArrow = GameObject.Find("SelectionArrow");
 
-        originalArrowPos = selectionArrow.transform.position;
 		turnIndicator.text = "Blue Turn";
 
         attackMenu.SetActive(false); //Hide the menu
+        magicMenu.SetActive(false);
+        selectionArrow.SetActive(false);
     }
 
-    //Move the arrow back to it's original position
-    public void ResetSelectionArrow()
+    private void UpdateUnitStatus()
     {
-        selectionArrow.transform.position = originalArrowPos;
+        if (hoveredUnit != null)
+            unitStatus.text = "Health: " + hoveredUnit.currentHealth + "/" + hoveredUnit.maxHealth + "\n" + "Mana: " + hoveredUnit.currentMana + "/" + hoveredUnit.maxMana;
+        else
+            unitStatus.text = "";
     }
 
-	public GameObject[] GetMenuOptions()
+    public void SetNewHoveredUnit()
+    {
+        if (TileController.instance.hoveredTile.GetComponent<TileInformation>().occupyingUnit != null)
+            hoveredUnit = TileController.instance.hoveredTile.GetComponent<TileInformation>().occupyingUnit.GetComponent<BaseClass>();
+        else
+            hoveredUnit = null;
+
+        UpdateUnitStatus();
+    }
+
+	public GameObject[] GetAttackMenuOptions()
 	{
-		return menuOptions;
+		return attackMenuOptions;
 	}
+
+    public GameObject[] GetMagicMenuOptions()
+    {
+        return magicMenuOptions;
+    }
 
 	public void SwapTurn(bool isBlueTurn) {
 		if (isBlueTurn) {
@@ -70,9 +93,10 @@ public class UIController : MonoBehaviour
 		}
 
 		Destroy (turnIndicator);
-		Destroy (GameController.gameCont);
-		Destroy (TileController.tileCont);
-		StateController.stateCont.stateList.Clear ();
-		Destroy (StateController.stateCont);
+		Destroy (GameController.instance);
+		Destroy (TileController.instance);
+		StateController.instance.stateList.Clear ();
+		Destroy (StateController.instance);
+        Destroy(instance);
 	}
 }
